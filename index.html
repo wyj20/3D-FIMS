@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D-FIMS 打印耗材管理系统 - v66</title>
+    <title>3D-FIMS 打印耗材管理系统</title>
     <style>
         :root {
             --main: #00acc1; --bg: #f8f9fa; --nav: #212121; --danger: #ff5252; --warn: #ff9800; --success: #4caf50;
@@ -13,21 +13,18 @@
         }
         body { font-family: 'Segoe UI', 'PingFang SC', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; font-size: var(--f-base); -webkit-tap-highlight-color: transparent; color: #333; }
         
-        /* 导航系统 */
         .tabs { display: flex; background: var(--nav); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
         .tab-btn { flex: 1; padding: 14px 2px; color: #888; border: none; background: none; font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; cursor: pointer; }
         .tab-btn.active { color: white; border-bottom: 3px solid var(--main); font-weight: bold; }
         .tab-count { font-size: 0.7rem; margin-top: 2px; opacity: 0.7; }
 
-        /* 极简搜索栏 */
         .search-container { background: white; padding: 8px 12px; position: sticky; top: 58px; z-index: 90; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .search-row { display: flex; gap: 8px; align-items: center; }
         .search-input { flex: 1; padding: 8px 15px; border: 1.5px solid #eee; border-radius: 20px; font-size: 0.85rem; outline: none; background: #fafafa; }
         .filter-toggle { width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid #eee; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; background: #fff; transition: all 0.2s; }
         .filter-toggle.active { border-color: var(--main); color: var(--main); background: #f0fbfc; }
         
-        /* 精简筛选托盘 */
-        .filter-tray { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: #fff; border-radius: 0 0 12px 12px; }
+        .filter-tray { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background: #fff; }
         .filter-tray.active { max-height: 120px; padding-top: 10px; padding-bottom: 5px; }
         
         .scroll-row { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 8px; align-items: center; }
@@ -40,7 +37,6 @@
         .filter-dot { padding: 4px 10px; border-radius: 12px; font-size: 0.65rem; background: #f2f2f2; color: #666; white-space: nowrap; border: 1px solid transparent; }
         .filter-dot.active { background: #e0f7f9; color: var(--main); border-color: var(--main); font-weight: bold; }
 
-        /* 卡片与垂直布局 */
         .container { padding: 12px; display: grid; grid-template-columns: repeat(var(--grid-cols), 1fr); gap: 12px; align-content: start; }
         .card { border-radius: 16px; padding: 1.1rem; position: relative; min-height: 180px; cursor: pointer; box-shadow: 0 6px 15px rgba(0,0,0,0.12); color: white; overflow: hidden; display: flex; flex-direction: column; transition: transform 0.1s; }
         .card:active { transform: scale(0.97); }
@@ -54,7 +50,6 @@
         .card .count { font-size: 2rem; font-weight: 900; line-height: 1; text-align: right; width: 100%; display: flex; align-items: baseline; justify-content: flex-end; }
         .card .count::after { content: '卷'; font-size: 0.75rem; font-weight: normal; margin-left: 4px; opacity: 0.8; }
 
-        /* 弹窗分层标准 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
         #warnModal { z-index: 2000; }
         .modal-content { background: white; width: 90%; max-width: 400px; border-radius: 26px; padding: 28px; color: #333; box-shadow: 0 10px 40px rgba(0,0,0,0.4); }
@@ -65,8 +60,8 @@
         .btn-danger { background: var(--danger); color: white; }
         .btn-success { background: var(--success); color: white; }
         
-        .btn-hold-init { position: relative; width: 100%; background: transparent; border: 1.5px solid var(--danger); color: var(--danger); border-radius: 12px; padding: 14px; font-size: 0.9rem; font-weight: bold; overflow: hidden; cursor: pointer; }
-        #holdProgress { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: rgba(255,82,82,0.15); transition: width 0.1s linear; }
+        .btn-hold-init { position: relative; width: 100%; background: transparent; border: 1.5px solid var(--danger); color: var(--danger); border-radius: 12px; padding: 14px; font-size: 0.9rem; font-weight: bold; overflow: hidden; cursor: pointer; user-select: none; -webkit-user-select: none; }
+        #holdProgress { position: absolute; left: 0; top: 0; height: 100%; width: 0%; background: rgba(255,82,82,0.25); transition: width 0.1s linear; }
 
         .fab { position: fixed; bottom: 25px; right: 25px; width: 68px; height: 68px; background: var(--main); color: white; border-radius: 50%; border: none; font-size: 38px; box-shadow: 0 8px 20px rgba(0,172,193,0.4); z-index: 99; display: flex; align-items: center; justify-content: center; }
         .tag-container { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
@@ -84,16 +79,16 @@
 <body>
 
 <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('sealed')">总库存清单<span id="cnt-sealed" class="tab-count">0</span></button>
+    <button class="tab-btn active" onclick="switchTab('sealed')">总耗材库<span id="cnt-sealed" class="tab-count">0</span></button>
     <button class="tab-btn" onclick="switchTab('inuse')">正在使用<span id="cnt-inuse" class="tab-count">0</span></button>
-    <button class="tab-btn" onclick="switchTab('opened')">备用开启库<span id="cnt-opened" class="tab-count">0</span></button>
-    <button class="tab-btn" onclick="switchTab('finished')">消耗结算统计<span id="cnt-finished" class="tab-count">0</span></button>
+    <button class="tab-btn" onclick="switchTab('opened')">开封备用<span id="cnt-opened" class="tab-count">0</span></button>
+    <button class="tab-btn" onclick="switchTab('finished')">消耗记录<span id="cnt-finished" class="tab-count">0</span></button>
     <button class="tab-btn" onclick="switchTab('settings')">⚙️ 系统设置</button>
 </div>
 
 <div id="searchBox" class="search-container">
     <div class="search-row">
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 3D-FIMS 检索中心..." oninput="render()">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 检索品牌、材质、备注..." oninput="render()">
         <div id="filterBtn" class="filter-toggle" onclick="toggleFilterTray()">⚙️</div>
     </div>
     <div id="filterTray" class="filter-tray">
@@ -104,9 +99,9 @@
 
 <div id="content" class="container"></div>
 
-<div id="warnModal" class="modal"><div class="modal-content" style="text-align:center;"><div id="warnIcon" style="font-size:55px;">⚠️</div><div id="warnTitle" style="font-weight:bold;font-size:1.2rem;margin:10px 0;">3D-FIMS 提示</div><p id="warnMsg" style="color:#666; font-size:0.95rem; margin-bottom:28px; line-height:1.6;"></p><div id="btnContainer" class="btn-row"><button class="btn" id="warnLeftBtn"></button><button class="btn" id="warnRightBtn"></button></div></div></div>
+<div id="warnModal" class="modal"><div class="modal-content" style="text-align:center;"><div id="warnIcon" style="font-size:55px;">⚠️</div><div id="warnTitle" style="font-weight:bold;font-size:1.2rem;margin:10px 0;">系统确认</div><p id="warnMsg" style="color:#666; font-size:0.95rem; margin-bottom:28px; line-height:1.6;"></p><div id="btnContainer" class="btn-row"><button class="btn" id="warnLeftBtn"></button><button class="btn" id="warnRightBtn"></button></div></div></div>
 
-<div id="newModal" class="modal"><div class="modal-content"><div id="modalActionTitle" style="font-weight:bold;font-size:1.2rem;text-align:center;margin-bottom:18px;">3D-FIMS 耗材入库</div>
+<div id="newModal" class="modal"><div class="modal-content"><div id="modalActionTitle" style="font-weight:bold;font-size:1.2rem;text-align:center;margin-bottom:18px;">耗材入库登记</div>
     <div style="margin-bottom:12px;"><label style="font-size:0.75rem;color:#999;">生产品牌</label><input type="text" id="inBrand" class="sync-input"><div id="brandTags" class="tag-container"></div></div>
     <div style="margin-bottom:12px;"><label style="font-size:0.75rem;color:#999;">材质类型</label><input type="text" id="inType" class="sync-input"><div id="typeTags" class="tag-container"></div></div>
     <div style="margin-bottom:12px;"><label style="font-size:0.75rem;color:#999;">补充说明 (备注)</label><input type="text" id="inNotes" placeholder="独立属性标记" class="sync-input"></div>
@@ -156,8 +151,8 @@
                 const imported = JSON.parse(e.target.result); if (!imported.sealed || !imported.config) throw new Error();
                 const currentSync = { token: db.settings.ghToken, repo: db.settings.ghRepo };
                 db = imported; db.settings.ghToken = currentSync.token; db.settings.ghRepo = currentSync.repo;
-                saveDB(); render(); showNotice("3D-FIMS 导入成功", "本地备份镜像已完整注入系统环境");
-            } catch(err) { showNotice("非法文件", "所选文件格式不正确或已损坏", "error"); }
+                saveDB(); render(); showNotice("恢复成功", "本地备份镜像已完整导入");
+            } catch(err) { showNotice("非法文件", "所选文件格式不正确", "error"); }
         }; reader.readAsText(file); input.value = "";
     }
 
@@ -166,7 +161,7 @@
         const downloadAnchor = document.createElement('a'); const timestamp = new Date().toLocaleString().replace(/[\/\s:]/g, '-');
         downloadAnchor.setAttribute("href", dataStr); downloadAnchor.setAttribute("download", `3D-FIMS_Backup_${timestamp}.json`);
         document.body.appendChild(downloadAnchor); downloadAnchor.click(); downloadAnchor.remove();
-        showNotice("导出完成", "3D-FIMS 物理离线存档已生成");
+        showNotice("导出完成", "物理离线存档已生成");
     }
 
     function renderPalette() {
@@ -188,19 +183,19 @@
     async function githubSync(action) {
         if (currentTab === 'settings') { db.settings.ghToken = document.getElementById('ghToken').value.trim(); db.settings.ghRepo = document.getElementById('ghRepo').value.trim(); saveDB(); }
         const token = db.settings.ghToken, repo = db.settings.ghRepo;
-        if (!token || !repo) { showNotice("配置缺失", "请先在 3D-FIMS 设置中补全云端同步信息", "error"); return; }
+        if (!token || !repo) { showNotice("配置缺失", "请先在设置中补全同步信息", "error"); return; }
         try {
             const url = `https://api.github.com/repos/${repo}/contents/data.json`, headers = { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' };
             if (action === 'upload') {
                 let cloudData = JSON.parse(JSON.stringify(db)); cloudData.settings.ghToken = ""; cloudData.settings.ghRepo = ""; 
                 let sha = ""; const getRes = await fetch(url, { headers }); if (getRes.ok) { const meta = await getRes.json(); sha = meta.sha; }
-                const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify({ message: "3D-FIMS Cloud Sync", content: btoa(unescape(encodeURIComponent(JSON.stringify(cloudData)))), sha })});
-                if (res.ok) { db.settings.lastSync = Date.now(); saveDB(); render(); showNotice("3D-FIMS 同步成功", "数据已上传至 GitHub 专业镜像库"); } else throw new Error();
+                const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify({ message: "Sync", content: btoa(unescape(encodeURIComponent(JSON.stringify(cloudData)))), sha })});
+                if (res.ok) { db.settings.lastSync = Date.now(); saveDB(); render(); showNotice("同步成功", "数据已上传至 GitHub"); } else throw new Error();
             } else {
                 const res = await fetch(url, { headers });
-                if (res.ok) { const data = await res.json(); const remote = JSON.parse(decodeURIComponent(escape(atob(data.content)))); remote.settings.ghToken = db.settings.ghToken; remote.settings.ghRepo = db.settings.ghRepo; db = remote; saveDB(); render(); showNotice("3D-FIMS 恢复成功", "已同步最新云端数据镜像"); } else showNotice("同步异常", "云端未发现有效数据", "error");
+                if (res.ok) { const data = await res.json(); const remote = JSON.parse(decodeURIComponent(escape(atob(data.content)))); remote.settings.ghToken = db.settings.ghToken; remote.settings.ghRepo = db.settings.ghRepo; db = remote; saveDB(); render(); showNotice("恢复成功", "已同步最新云端镜像"); } else showNotice("异常", "云端未发现数据", "error");
             }
-        } catch(e) { showNotice("3D-FIMS 通信失败", "网络或令牌权限异常", "error"); }
+        } catch(e) { showNotice("通信失败", "网络或令牌权限异常", "error"); }
     }
 
     function renderFilters() {
@@ -226,11 +221,11 @@
             const syncTime = db.settings.lastSync ? new Date(db.settings.lastSync).toLocaleString() : '从未备份';
             container.innerHTML = `<div class="settings-group"><div class="settings-title">🎨 界面显示规格</div><div class="select-picker">${[1,2,3].map(n => `<div class="select-option ${db.settings.columns==n?'active':''}" onclick="updateCols(${n})">${n} 列显示</div>`).join('')}</div></div>
                 <div class="settings-group"><div class="settings-title">📊 耗材排序逻辑</div><div class="select-picker"><div class="select-option ${db.settings.sortOrder=='brand'?'active':''}" onclick="updateSort('brand')">品牌优先</div><div class="select-option ${db.settings.sortOrder=='type'?'active':''}" onclick="updateSort('type')">材质优先</div><div class="select-option ${db.settings.sortOrder=='count'?'active':''}" onclick="updateSort('count')">数量优先</div></div></div>
-                <div class="settings-group"><div class="settings-title">☁️ 3D-FIMS 云端同步</div><input type="password" id="ghToken" class="sync-input" value="${db.settings.ghToken}" placeholder="GitHub Token (ghp_...)"><input type="text" id="ghRepo" class="sync-input" value="${db.settings.ghRepo}" placeholder="仓库路径 (例: wyj20/3D-FIMS)">
+                <div class="settings-group"><div class="settings-title">☁️ 云端数据同步配置</div><input type="password" id="ghToken" class="sync-input" value="${db.settings.ghToken}" placeholder="GitHub Token (ghp_...)"><input type="text" id="ghRepo" class="sync-input" value="${db.settings.ghRepo}" placeholder="仓库路径 (例: wyj20/3D-FIMS)">
                 <div style="font-size:0.65rem; color:#999; margin-bottom:12px; text-align:right;">🕒 上次云同步：${syncTime}</div>
                 <div style="display:flex; gap:12px;"><button class="btn btn-main" style="font-size:0.85rem;" onclick="githubSync('upload')">↑ 上传同步</button><button class="btn btn-cancel" style="font-size:0.85rem; border:1px solid #ddd;" onclick="githubSync('download')">↓ 下载同步</button></div></div>
-                <div class="settings-group"><div class="settings-title">💾 3D-FIMS 离线安全存档</div><div style="display:flex; gap:12px;"><button class="btn btn-cancel" style="width:100%; border:1.5px solid var(--main); color:var(--main); font-size:0.85rem;" onclick="exportLocalBackup()">导出离线存档</button><button class="btn btn-cancel" style="width:100%; border:1.5px solid var(--main); color:var(--main); font-size:0.85rem;" onclick="triggerLocalRestore()">导入离线存档</button></div></div>
-                <div class="settings-group"><div class="settings-title">⚙️ 危险区域：3D-FIMS 维护</div><button class="btn-hold-init" id="initBtn" onmousedown="startHold()" onmouseup="endHold()" ontouchstart="startHold()" ontouchend="endHold()"><div id="holdProgress"></div><span style="position:relative;z-index:1">长按 3 秒初始化系统环境</span></button></div>`;
+                <div class="settings-group"><div class="settings-title">💾 物理安全备份 (离线)</div><div style="display:flex; gap:12px;"><button class="btn btn-cancel" style="width:100%; border:1.5px solid var(--main); color:var(--main); font-size:0.85rem;" onclick="exportLocalBackup()">导出本地存档</button><button class="btn btn-cancel" style="width:100%; border:1.5px solid var(--main); color:var(--main); font-size:0.85rem;" onclick="triggerLocalRestore()">导入本地备份</button></div></div>
+                <div class="settings-group"><div class="settings-title">⚙️ 危险区域：系统维护</div><button class="btn-hold-init" id="initBtn" onmousedown="startHold(event)" onmouseup="endHold()" ontouchstart="startHold(event)" ontouchend="endHold()"><div id="holdProgress"></div><span style="position:relative;z-index:1">长按 3 秒初始化系统环境</span></button></div>`;
             return;
         }
 
@@ -273,7 +268,7 @@
 
     function requestDelTag(c, v) {
         document.getElementById('warnIcon').innerText = '⚠️'; document.getElementById('warnIcon').style.color = 'var(--warn)';
-        showCustomWarn("管理 3D-FIMS 属性", `确定要永久移除 [${v}] 吗？`, "放弃", "btn-cancel", closeModals, "确定删除", "btn-danger", () => {
+        showCustomWarn("标签管理", `确定要永久移除 [${v}] 属性吗？`, "放弃", "btn-cancel", closeModals, "确定删除", "btn-danger", () => {
             let l = c === 'Brand' ? db.config.brands : db.config.types; let i = l.indexOf(v); if (i > -1) l.splice(i, 1); saveDB(); renderTags(); closeModals();
         });
     }
@@ -288,10 +283,26 @@
         if(document.getElementById('typeTags')) document.getElementById('typeTags').innerHTML = build('Type', db.config.types);
     }
 
-    function startHold() { holdProgress = 0; holdTimer = setInterval(() => { holdProgress += 3.33; document.getElementById('holdProgress').style.width = holdProgress + '%'; if (holdProgress >= 100) { clearInterval(holdTimer); endHold(); requestReset(); } }, 100); }
-    function endHold() { clearInterval(holdTimer); if (holdProgress < 100) { holdProgress = 0; document.getElementById('holdProgress').style.width = '0%'; } }
-    function openNewMode() { isEditMode = false; document.getElementById('modalActionTitle').innerText = '3D-FIMS 耗材入库'; document.getElementById('saveNewBtn').innerText = '确认入库'; document.getElementById('countRow').style.display = 'block'; showModal('newModal'); }
-    function openEditMode() { isEditMode = true; closeModals(); const item = db[activeFrom][activeIdx]; document.getElementById('inBrand').value = item.brand; document.getElementById('inType').value = item.type; document.getElementById('inNotes').value = item.notes || ''; document.getElementById('inColor').value = item.color; document.getElementById('modalActionTitle').innerText = '3D-FIMS 资料修订'; document.getElementById('saveNewBtn').innerText = '保存修订'; document.getElementById('countRow').style.display = 'none'; showModal('newModal'); }
+    /* 🆕 强化长按初始化逻辑 */
+    function startHold(e) {
+        e.preventDefault();
+        holdProgress = 0;
+        const bar = document.getElementById('holdProgress');
+        holdTimer = setInterval(() => {
+            holdProgress += 3.33;
+            if(bar) bar.style.width = holdProgress + '%';
+            if (holdProgress >= 100) { clearInterval(holdTimer); endHold(); requestReset(); }
+        }, 100);
+    }
+    function endHold() {
+        clearInterval(holdTimer);
+        holdProgress = 0;
+        const bar = document.getElementById('holdProgress');
+        if(bar) bar.style.width = '0%';
+    }
+
+    function openNewMode() { isEditMode = false; document.getElementById('modalActionTitle').innerText = '耗材入库登记'; document.getElementById('saveNewBtn').innerText = '确认入库'; document.getElementById('countRow').style.display = 'block'; showModal('newModal'); }
+    function openEditMode() { isEditMode = true; closeModals(); const item = db[activeFrom][activeIdx]; document.getElementById('inBrand').value = item.brand; document.getElementById('inType').value = item.type; document.getElementById('inNotes').value = item.notes || ''; document.getElementById('inColor').value = item.color; document.getElementById('modalActionTitle').innerText = '修订资料属性'; document.getElementById('saveNewBtn').innerText = '保存修订'; document.getElementById('countRow').style.display = 'none'; showModal('newModal'); }
     function saveNew() {
         const b = document.getElementById('inBrand').value.trim(), t = document.getElementById('inType').value.trim(), c = document.getElementById('inColor').value, nts = document.getElementById('inNotes').value.trim();
         if (!b || !t) return; if (!db.config.brands.includes(b)) db.config.brands.push(b); if (!db.config.types.includes(t)) db.config.types.push(t);
@@ -300,20 +311,29 @@
         saveDB(); render(); closeModals(); document.getElementById('inBrand').value = ''; document.getElementById('inType').value = ''; document.getElementById('inNotes').value = ''; document.getElementById('inCount').value = '1';
     }
 
-    function requestReset() { document.getElementById('warnIcon').innerText = '⚠️'; document.getElementById('warnIcon').style.color = 'var(--warn)'; showCustomWarn("系统初始化", "该操作将抹除所有 3D-FIMS 本地数据。确认？", "放弃", "btn-cancel", closeModals, "确认重置", "btn-danger", () => { db = JSON.parse(JSON.stringify(INITIAL_DB)); saveDB(); render(); closeModals(); showNotice("3D-FIMS 重置成功", "系统环境已恢复出厂状态"); }); }
-    function requestClearFinished() { document.getElementById('warnIcon').innerText = '⚠️'; document.getElementById('warnIcon').style.color = 'var(--warn)'; showCustomWarn("彻底清空记录", "确定要抹除所有结算统计吗？", "取消", "btn-cancel", closeModals, "确定清空", "btn-danger", () => { db.finished = []; saveDB(); render(); closeModals(); }); }
-    function requestDelete() { const item = db[activeFrom][activeIdx]; document.getElementById('warnIcon').innerText = '⚠️'; document.getElementById('warnIcon').style.color = 'var(--warn)'; showCustomWarn("记录移除", `确定永久移除记录【${item.brand} ${item.type}】？`, "取消", "btn-cancel", closeModals, "确定移除", "btn-danger", () => { db[activeFrom].splice(activeIdx, 1); saveDB(); render(); closeModals(); }); }
+    /* 🆕 彻底清空逻辑 */
+    function requestReset() { 
+        document.getElementById('warnIcon').innerText = '⚠️'; document.getElementById('warnIcon').style.color = 'var(--warn)'; 
+        showCustomWarn("系统初始化确认", "该操作将抹除所有本地耗材数据。建议先导出存档。确认初始化？", "放弃", "btn-cancel", closeModals, "确认重置", "btn-danger", () => { 
+            localStorage.clear(); // 物理清空
+            showNotice("重置成功", "系统即将重新加载...");
+            setTimeout(() => { location.reload(); }, 1500); // 1.5秒后强制刷新页面
+        }); 
+    }
+    
+    function requestClearFinished() { document.getElementById('warnIcon').innerText = '⚠️'; document.getElementById('warnIcon').style.color = 'var(--warn)'; showCustomWarn("记录清空确认", "确定要抹除所有历史统计记录吗？", "取消", "btn-cancel", closeModals, "确定清空", "btn-danger", () => { db.finished = []; saveDB(); render(); closeModals(); }); }
+    function requestDelete() { const item = db[activeFrom][activeIdx]; document.getElementById('warnIcon').innerText = '⚠️'; document.getElementById('warnIcon').style.color = 'var(--warn)'; showCustomWarn("移除确认", `确定永久移除记录【${item.brand} ${item.type}】？`, "取消", "btn-cancel", closeModals, "确定移除", "btn-danger", () => { db[activeFrom].splice(activeIdx, 1); saveDB(); render(); closeModals(); }); }
     function confirmAdj() { let n = parseInt(document.getElementById('adjNum').value); if (isNaN(n) || n < 1) n = 1; db[activeFrom][activeIdx].count = n; saveDB(); render(); closeModals(); }
-    function checkUnseal(idx) { let item = db.sealed[idx]; let dup = db.inuse.concat(db.opened).find(i => i.brand === item.brand && i.type === item.type && i.color === item.color); if (dup) { document.getElementById('warnIcon').innerText = '⚠️'; document.getElementById('warnIcon').style.color = 'var(--warn)'; showCustomWarn("3D-FIMS 状态预警", "相同规格耗材已在开启状态，确认重复开启？", "放弃", "btn-cancel", closeModals, "确认开启", "btn-main", () => { doUnseal(idx); }); } else doUnseal(idx); }
+    function checkUnseal(idx) { let item = db.sealed[idx]; let dup = db.inuse.concat(db.opened).find(i => i.brand === item.brand && i.type === item.type && i.color === item.color); if (dup) { document.getElementById('warnIcon').innerText = '⚠️'; document.getElementById('warnIcon').style.color = 'var(--warn)'; showCustomWarn("状态预警", "相同规格耗材已处于开启状态，确认重复开启？", "放弃", "btn-cancel", closeModals, "确认开启", "btn-main", () => { doUnseal(idx); }); } else doUnseal(idx); }
     function doUnseal(idx) { let item = db.sealed[idx]; item.count--; if(item.count<=0) db.sealed.splice(idx,1); let exist = db.inuse.find(i=>i.brand===item.brand && i.type===item.type && i.color===item.color && i.notes===item.notes); if(exist) exist.count++; else db.inuse.push({...item, count:1}); saveDB(); render(); closeModals(); }
-    function confirmFinish(idx, f) { activeIdx = idx; activeFrom = f; document.getElementById('warnIcon').innerText = '📦'; document.getElementById('warnIcon').style.color = 'var(--main)'; showCustomWarn("3D-FIMS 结算确认", "请选择本批次结算方式：", "全额核销", "btn-danger", () => { doFinish('all'); }, "核销 1 卷", "btn-main", () => { doFinish(1); }); }
+    function confirmFinish(idx, f) { activeIdx = idx; activeFrom = f; document.getElementById('warnIcon').innerText = '📦'; document.getElementById('warnIcon').style.color = 'var(--main)'; showCustomWarn("核销确认", "请选择结算方式：", "全额核销", "btn-danger", () => { doFinish('all'); }, "核销 1 卷", "btn-main", () => { doFinish(1); }); }
     function doFinish(m) { let item = db[activeFrom][activeIdx], n = (m===1)?1:item.count; let exist = db.finished.find(i => i.brand === item.brand && i.type === item.type && i.color === item.color && i.notes === item.notes); if(exist) exist.count += n; else db.finished.push({...item, count:n}); if(m===1) { item.count--; if(item.count<=0) db[activeFrom].splice(activeIdx,1); } else db[activeFrom].splice(activeIdx,1); saveDB(); render(); closeModals(); }
     function move(idx, f, t) { let item = db[f].splice(idx, 1)[0], exist = db[t].find(i=>i.brand===item.brand && i.type===item.type && i.color===item.color && i.notes===item.notes); if(exist) exist.count += item.count; else db[t].push(item); saveDB(); render(); }
     function switchTab(t) { currentTab = t; document.getElementById('searchInput').value = ''; activeFilter = ''; activeColor = ''; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); if(event) event.currentTarget.classList.add('active'); render(); }
     function showCustomWarn(t, m, lT, lC, lF, rT, rC, rF) { document.getElementById('warnTitle').innerText = t; document.getElementById('warnMsg').innerText = m; const lB = document.getElementById('warnLeftBtn'), rB = document.getElementById('warnRightBtn'); if(lC==="hide"){lB.style.display="none"}else{lB.style.display="block";lB.innerText = lT; lB.className = "btn " + lC; lB.onclick = lF;} rB.innerText = rT; rB.className = "btn " + rC; rB.onclick = rF; document.getElementById('warnModal').style.display = 'flex'; }
     function updateSort(v) { db.settings.sortOrder = v; saveDB(); render(); }
     function updateCols(n) { db.settings.columns = n; saveDB(); render(); }
-    function addTag(c) { let v = prompt("3D-FIMS 录入新属性:"); if(v) { let l = c==='Brand'?db.config.brands:db.config.types; if(!l.includes(v))l.push(v); renderTags(); saveDB(); } }
+    function addTag(c) { let v = prompt("属性标签名称:"); if(v) { let l = c==='Brand'?db.config.brands:db.config.types; if(!l.includes(v))l.push(v); renderTags(); saveDB(); } }
     function setIn(id, v) { document.getElementById(id).value = v; }
     function stepAdjust(v) { let el = document.getElementById('adjNum'); el.value = Math.max(1, (parseInt(el.value)||1)+v); }
     function updateCounts() { ['sealed','inuse','opened','finished'].forEach(k => { const el = document.getElementById('cnt-'+k); if(el) el.innerText = db[k].reduce((s,i)=>s+(parseInt(i.count)||0),0); }); }
