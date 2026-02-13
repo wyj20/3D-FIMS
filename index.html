@@ -119,7 +119,7 @@
 
     <div id="matrixPanel" class="search-matrix-panel">
         <div class="matrix-header">
-            <div class="matrix-search-box"><span style="font-size:1rem; opacity:0.4">🔍</span><input type="text" id="matrixInput" class="matrix-input" placeholder="输入关键字..." oninput="SearchEngine.onInput()"></div>
+            <div class="matrix-search-box"><span style="font-size:1rem; opacity:0.4">🔍</span><input type="text" id="matrixInput" class="matrix-input placeholder="输入关键字..." oninput="SearchEngine.onInput()"></div>
             <div class="matrix-clear-btn" onclick="SearchEngine.clear()">重置</div>
         </div>
         <div class="matrix-section"><div class="matrix-label">厂家</div><div id="trackBrand" class="matrix-track"></div></div>
@@ -172,7 +172,6 @@
             t = t ? t.trim() : ''; r = r ? r.trim().replace('https://github.com/', '').replace('.git', '') : '';
             if(!t || !r) return Toast.show("请先填写配置");
             
-            // v4.4 & 4.5 fixes included
             if(t !== STATE.settings.ghToken || r !== STATE.settings.ghRepo) { STATE.settings.ghToken = t; STATE.settings.ghRepo = r; Core.save(); if(Router.activeTab === 'settings') SettingsUI.render(document.querySelector('.view-settings > div')); }
 
             this.setStatus('working'); Toast.show("☁️ 正在连接云端...");
@@ -244,7 +243,6 @@
         },
 
         async autoCloud() { 
-            // v4.6 Fix: Check global switch before running
             if (!STATE.settings.autoSync) return;
 
             let { ghToken: t, ghRepo: r } = STATE.settings; if(!t || !r) return;
@@ -341,7 +339,19 @@
         },
         getBackgroundStyle(mode, c1, c2) { if(mode === 'gradient') return `linear-gradient(135deg, ${c1}, ${c2})`; if(mode === 'dual') return `linear-gradient(90deg, ${c1} 50%, ${c2} 50%)`; return c1; },
         switchColorMode(mode) { this.currentColorMode = mode; document.querySelectorAll('#entryPortal .grid-btn').forEach(b => b.classList.remove('active')); document.getElementById('mode-'+mode).classList.add('active'); document.getElementById('inColorPicker2').style.display = (mode==='solid') ? 'none':'block'; document.getElementById('colorJoin').style.display = (mode==='solid') ? 'none':'block'; },
-        openAdd() { this.editMode = false; document.getElementById('entryTitle').innerText = '耗材入库登记'; ['inBrand','inType','inNotes'].forEach(id=>document.getElementById(id).value=''); document.getElementById('inCount').value = 1; document.getElementById('inColorPicker1').value = '#00acc1'; document.getElementById('inColorPicker2').value = '#ff4081'; this.switchColorMode('solid'); this.renderTagCloud(); Portal.open('entryPortal'); },
+        openAdd() {
+            this.editMode = false;
+            document.getElementById('entryTitle').innerText = '耗材入库登记';
+            ['inBrand','inType','inNotes'].forEach(id=>document.getElementById(id).value='');
+            document.getElementById('inCount').value = 1;
+            document.getElementById('inColorPicker1').value = '#00acc1';
+            document.getElementById('inColorPicker2').value = '#ff4081';
+            this.switchColorMode('solid');
+            this.renderTagCloud();
+            
+            Portal.closeAll();
+            Portal.open('entryPortal');
+        },
         renderTagCloud() { const build = (cat, list, elId) => { document.getElementById(elId).innerHTML = list.map(v => `<div class="tag-pill" id="tag-${cat}-${v}">${v}</div>`).join('') + `<div class="tag-pill" style="color:var(--main); border-style:dashed" onclick="InventoryUI.newTag('${cat}')">+</div>`; list.forEach(v => { const el = document.getElementById(`tag-${cat}-${v}`); let timer; el.ontouchstart = () => { timer = setTimeout(() => Portal.confirm("移除标签", `确定删除 [${v}]？`, "取消", Portal.closeWarn, "移除", () => { STATE.config[cat === 'Brand' ? 'brands' : 'types'].splice(list.indexOf(v), 1); Core.save(); InventoryUI.renderTagCloud(); Portal.closeWarn(); }), 750); }; el.ontouchend = () => { clearTimeout(timer); if(timer) document.getElementById('in'+cat).value = v; }; }); }; build('Brand', STATE.config.brands, 'brandTags'); build('Type', STATE.config.types, 'typeTags'); },
         newTag(cat) { const v = prompt("新标签名称:"); if(v){ STATE.config[cat==='Brand'?'brands':'types'].push(v); Core.save(); this.renderTagCloud(); } },
         saveSubmit() {
@@ -349,15 +359,66 @@
             if(!b || !t) return;
             if(!STATE.config.brands.includes(b)) STATE.config.brands.push(b); if(!STATE.config.types.includes(t)) STATE.config.types.push(t);
             const newData = { brand: b, type: t, color: c1, color2: c2, colorMode: this.currentColorMode, count: n, notes: nts };
-            if(this.editMode) { Core.updateItem(this.editIdx, Router.activeTab, newData); } else { ['sealed','inuse','opened'].forEach(k => STATE.inventory[k].forEach(i => delete i.isNew)); newData.isNew = true; let exist = STATE.inventory.sealed.find(i => i.brand === b && i.type === t && i.color === c1 && i.color2 === c2 && i.colorMode === this.currentColorMode && i.notes === nts); if(exist) { exist.count += n; exist.isNew = true; } else STATE.inventory.sealed.push(newData); Core.save(); Router.render(); Portal.closeAll(); }
+            if(this.editMode) { Core.updateItem(this.editIdx, Router.activeTab, newData); } else { ['sealed','inuse','opened'].forEach(k => STATE.inventory[k].forEach(i => delete i.isNew)); newData.isNew = true; let exist = STATE.inventory.sealed.find(i => i.brand === b && i.type === t && i.color === c1 && i.color2 === c2 && i.colorMode === this.colorMode && i.notes === nts); if(exist) { exist.count += n; exist.isNew = true; } else STATE.inventory.sealed.push(newData); Core.save(); Router.render(); Portal.closeAll(); }
         }
     };
     const HubUI = {
         activeIdx: null, activeTab: null,
-        open(idx, tab) { this.activeIdx = idx; this.activeTab = tab; const item = STATE.inventory[tab][idx]; const bg = InventoryUI.getBackgroundStyle(item.colorMode, item.color, item.color2); const badge = item.isNew ? `<div class="card-new-badge">NEW</div>` : ''; document.getElementById('hubCardArea').innerHTML = `<div class="fims-card density-standard" style="background:${bg}; cursor:default;">${badge}<div class="card-content-layer"><div class="card-brand">${item.brand}</div><div class="card-type">${item.type}</div>${item.notes?`<div class="card-notes"># ${item.notes}</div>`:''}<div class="card-count">${item.count}</div></div></div>`; let btns = ''; if(tab === 'sealed') btns = `<button class="fims-btn btn-main" onclick="HubUI.checkUnseal(${idx})">出库开启</button>`; else if(tab === 'inuse') btns = `<button class="fims-btn btn-main" onclick="Core.moveItem(${idx},'inuse','opened')">取下备用</button><button class="fims-btn btn-danger" onclick="HubUI.openFinishModal()">耗尽核销</button>`; else if(tab === 'opened') btns = `<button class="fims-btn btn-main" onclick="Core.moveItem(${idx},'opened','inuse')">上机加载</button><button class="fims-btn btn-danger" onclick="HubUI.openFinishModal()">耗尽核销</button>`; else if(tab === 'finished') btns = `<button class="fims-btn btn-main" onclick="Core.moveItem(${idx},'finished','sealed')">恢复库存</button>`; document.getElementById('hubActionArea').innerHTML = btns; Portal.open('hubPortal'); },
-        checkUnseal(idx) { const item = STATE.inventory.sealed[idx]; const inUseCount = STATE.inventory.inuse.filter(i => i.brand === item.brand && i.type === item.type && i.color === item.color).reduce((s,i)=>s+i.count,0); const openedCount = STATE.inventory.opened.filter(i => i.brand === item.brand && i.type === item.type && i.color === item.color).reduce((s,i)=>s+i.count,0); if (inUseCount > 0 || openedCount > 0) Portal.confirm("重复提醒", `同规格已在库：使用中 ${inUseCount} | 备用 ${openedCount}\n确定开启新卷？`, "取消", Portal.closeWarn, "确定开启", () => Core.moveItem(idx, 'sealed', 'inuse')); else Core.moveItem(idx, 'sealed', 'inuse'); },
-        openFinishModal() { Portal.open('finishPortal'); }, doFinish(all) { Core.moveItem(this.activeIdx, this.activeTab, 'finished', all); }, requestDelete() { Portal.confirm("删除", "永久删除此记录？", "取消", Portal.closeWarn, "删除", () => Core.deleteItem(this.activeIdx, this.activeTab)); },
-        toEditMode() { Portal.closeAll(); const item = STATE.inventory[this.activeTab][this.activeIdx]; InventoryUI.editMode = true; InventoryUI.editIdx = this.activeIdx; document.getElementById('entryTitle').innerText = '修订资料'; document.getElementById('inBrand').value = item.brand; document.getElementById('inType').value = item.type; document.getElementById('inNotes').value = item.notes || ''; document.getElementById('inColorPicker1').value = item.color; if(item.color2) document.getElementById('inColorPicker2').value = item.color2; document.getElementById('inCount').value = item.count; InventoryUI.switchColorMode(item.colorMode || 'solid'); InventoryUI.renderTagCloud(); setTimeout(() => Portal.open('entryPortal'), 50); }
+        open(idx, tab) {
+            this.activeIdx = idx;
+            this.activeTab = tab;
+            const item = STATE.inventory[tab][idx];
+            const bg = InventoryUI.getBackgroundStyle(item.colorMode, item.color, item.color2);
+            const badge = item.isNew ? `<div class="card-new-badge">NEW</div>` : '';
+            document.getElementById('hubCardArea').innerHTML = `<div class="fims-card density-standard" style="background:${bg}; cursor:default;">${badge}<div class="card-content-layer"><div class="card-brand">${item.brand}</div><div class="card-type">${item.type}</div>${item.notes?`<div class="card-notes"># ${item.notes}</div>`:''}<div class="card-count">${item.count}</div></div></div>`;
+            let btns = '';
+            if(tab === 'sealed') btns = `<button class="fims-btn btn-main" onclick="HubUI.checkUnseal(${idx})">出库开启</button>`;
+            else if(tab === 'inuse') btns = `<button class="fims-btn btn-main" onclick="Core.moveItem(${idx},'inuse','opened')">取下备用</button><button class="fims-btn btn-danger" onclick="HubUI.openFinishModal()">耗尽核销</button>`;
+            else if(tab === 'opened') btns = `<button class="fims-btn btn-main" onclick="Core.moveItem(${idx},'opened','inuse')">上机加载</button><button class="fims-btn btn-danger" onclick="HubUI.openFinishModal()">耗尽核销</button>`;
+            else if(tab === 'finished') btns = `<button class="fims-btn btn-main" onclick="Core.moveItem(${idx},'finished','sealed')">恢复库存</button>`;
+            document.getElementById('hubActionArea').innerHTML = btns;
+            
+            Portal.closeAll();
+            Portal.open('hubPortal');
+        },
+        checkUnseal(idx) {
+            // 🔥 这里是真正漏改的：弹出确认框前先关掉旧弹窗
+            Portal.closeAll();
+
+            const item = STATE.inventory.sealed[idx];
+            const inUseCount = STATE.inventory.inuse.filter(i => i.brand === item.brand && i.type === item.type && i.color === item.color).reduce((s,i)=>s+i.count,0);
+            const openedCount = STATE.inventory.opened.filter(i => i.brand === item.brand && i.type === item.type && i.color === item.color).reduce((s,i)=>s+i.count,0);
+            if (inUseCount > 0 || openedCount > 0) {
+                Portal.confirm("重复提醒", `同规格已在库：使用中 ${inUseCount} | 备用 ${openedCount}\n确定开启新卷？`, "取消", Portal.closeWarn, "确定开启", () => Core.moveItem(idx, 'sealed', 'inuse'));
+            } else {
+                Core.moveItem(idx, 'sealed', 'inuse');
+            }
+        },
+        openFinishModal() {
+            Portal.closeAll();
+            Portal.open('finishPortal');
+        },
+        doFinish(all) { Core.moveItem(this.activeIdx, this.activeTab, 'finished', all); },
+        requestDelete() {
+            Portal.closeAll();
+            Portal.confirm("删除", "永久删除此记录？", "取消", Portal.closeWarn, "删除", () => Core.deleteItem(this.activeIdx, this.activeTab));
+        },
+        toEditMode() {
+            Portal.closeAll();
+            const item = STATE.inventory[this.activeTab][this.activeIdx];
+            InventoryUI.editMode = true;
+            InventoryUI.editIdx = this.activeIdx;
+            document.getElementById('entryTitle').innerText = '修订资料';
+            document.getElementById('inBrand').value = item.brand;
+            document.getElementById('inType').value = item.type;
+            document.getElementById('inNotes').value = item.notes || '';
+            document.getElementById('inColorPicker1').value = item.color;
+            if(item.color2) document.getElementById('inColorPicker2').value = item.color2;
+            document.getElementById('inCount').value = item.count;
+            InventoryUI.switchColorMode(item.colorMode || 'solid');
+            InventoryUI.renderTagCloud();
+            setTimeout(() => Portal.open('entryPortal'), 50);
+        }
     };
     const SettingsUI = {
         holdTimer: null, holdProgress: 0,
@@ -400,7 +461,21 @@
         open(id) { document.getElementById(id).style.display = 'flex'; document.body.classList.add('modal-lock'); },
         closeAll() { document.querySelectorAll('.fims-portal').forEach(p => p.style.display = 'none'); document.body.classList.remove('modal-lock'); document.body.removeAttribute('style'); },
         closeWarn() { this.closeAll(); },
-        confirm(t, m, lT, lF, rT, rF) { document.getElementById('warnTitle').innerText = t; document.getElementById('warnMsg').innerText = m; const lB = document.getElementById('warnLBtn'), rB = document.getElementById('warnRBtn'); lB.innerText = lT; lB.className = "fims-btn btn-ghost"; lB.onclick = lF; rB.innerText = rT; rB.className = rT ? "fims-btn btn-danger" : "fims-btn btn-ghost"; if(rT) { rB.style.display='flex'; rB.onclick = rF; } else rB.style.display='none'; this.open('warnPortal'); }
+        confirm(t, m, lT, lF, rT, rF) {
+            // 统一：打开确认框前先关所有弹窗
+            this.closeAll();
+            
+            document.getElementById('warnTitle').innerText = t;
+            document.getElementById('warnMsg').innerText = m;
+            const lB = document.getElementById('warnLBtn'), rB = document.getElementById('warnRBtn');
+            lB.innerText = lT;
+            lB.className = "fims-btn btn-ghost";
+            lB.onclick = lF;
+            rB.innerText = rT;
+            rB.className = rT ? "fims-btn btn-danger" : "fims-btn btn-ghost";
+            if(rT) { rB.style.display='flex'; rB.onclick = rF; } else rB.style.display='none';
+            this.open('warnPortal');
+        }
     };
     
     document.documentElement.style.setProperty('--grid-cols', STATE.settings.columns);
