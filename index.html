@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D-FIMS Core Next v4.2</title>
+    <title>3D-FIMS Core Next v4.3</title>
     <style>
         :root {
             --main: #00acc1; --bg: #f8f9fa; --nav: #212121; 
@@ -139,7 +139,7 @@
     let RAW_DB = JSON.parse(localStorage.getItem('FIMS_NEXT_DB'));
     let STATE = RAW_DB ? Migrator.fix(RAW_DB) : Migrator.fix({}); 
 
-    /* v4.2 Cloud Engine: Fixed First-Run & Strict Timing */
+    /* v4.3 Diagnostic Cloud Engine */
     const SyncCenter = {
         setStatus(status) { const el = document.getElementById('sync-dot'); if(el) el.className = 'sync-status ' + status; },
         export() { const a=document.createElement('a'); a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(STATE)); a.download=`FIMS_${Date.now()}.json`; a.click(); },
@@ -147,54 +147,68 @@
         importFile(input) { const file = input.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if(data.inventory && data.settings) { Portal.closeAll(); document.body.removeAttribute('style'); requestAnimationFrame(() => { setTimeout(() => { STATE = Migrator.fix(data); Core.save(); Router.render(); Toast.show("导入成功"); }, 50); }); } else throw new Error(); } catch(err) { Toast.show("文件无效"); } }; reader.readAsText(file); input.value = ''; },
         
         async push() {
-            const { ghToken: t, ghRepo: r } = STATE.settings;
-            if(!t || !r) return Toast.show("请先填写 Token 和 仓库路径");
+            let { ghToken: t, ghRepo: r } = STATE.settings;
+            if(!t || !r) return Toast.show("请先填写配置");
+            
+            // v4.3 Auto-Correction: Remove URL prefix and .git suffix
+            r = r.replace('https://github.com/', '').replace('.git', '');
+            if(r !== STATE.settings.ghRepo) { STATE.settings.ghRepo = r; SettingsUI.render(document.querySelector('.view-settings > div')); }
+
             this.setStatus('working'); Toast.show("☁️ 正在连接云端...");
             
             try {
                 const url = `https://api.github.com/repos/${r}/contents/data.json`, headers = { 'Authorization': `token ${t}` };
                 
-                // 1. Check if file exists (Smart Create Logic)
+                // 1. Check & SHA
                 let sha = null;
                 const checkRes = await fetch(url, { headers });
+                
                 if(checkRes.ok) {
-                    const data = await checkRes.json();
-                    sha = data.sha;
-                } else if (checkRes.status !== 404) {
-                    // If error is NOT 404, it's a permission error
-                    throw new Error("Permission Denied");
+                    sha = (await checkRes.json()).sha;
+                } else if(checkRes.status !== 404) {
+                    // v4.3 Diagnostic Error Throwing
+                    const errData = await checkRes.json().catch(()=>({}));
+                    const errMsg = errData.message || checkRes.statusText;
+                    throw new Error(`${checkRes.status}|${errMsg}`);
                 }
 
-                // 2. Construct Payload
-                const payload = {
-                    message: "Manual Push via FIMS",
-                    content: btoa(unescape(encodeURIComponent(JSON.stringify(STATE))))
-                };
-                if(sha) payload.sha = sha; // Only add SHA if updating, omit for creating
+                // 2. Payload
+                const payload = { message: "Manual Push via FIMS", content: btoa(unescape(encodeURIComponent(JSON.stringify(STATE)))) };
+                if(sha) payload.sha = sha;
 
-                // 3. Perform PUT
+                // 3. Upload
                 const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(payload) });
                 
                 if(res.ok) { 
-                    STATE.settings.lastSyncTime = new Date().toLocaleString(); // Only update local time on 200/201
-                    // Don't call Core.save() here to avoid recursive autoCloud loop, just save to LS
+                    STATE.settings.lastSyncTime = new Date().toLocaleString();
                     localStorage.setItem('FIMS_NEXT_DB', JSON.stringify(STATE));
                     this.setStatus('active'); 
                     if(Router.activeTab === 'settings') SettingsUI.render(document.querySelector('.view-settings > div'));
                     Toast.show("✅ 上传成功"); 
                 } else {
-                    throw new Error("Upload Failed");
+                    const errData = await res.json().catch(()=>({}));
+                    const errMsg = errData.message || res.statusText;
+                    throw new Error(`${res.status}|${errMsg}`);
                 }
-            } catch(e) { this.setStatus('error'); Toast.show("❌ 上传失败: 请检查 Token 权限"); }
+            } catch(e) { 
+                this.setStatus('error'); 
+                const [code, msg] = e.message.split('|');
+                let tip = `❌ 错误 ${code || '未知'}`;
+                if(code == '401') tip += ": Token 无效 (请检查权限)";
+                else if(code == '404') tip += ": 仓库不存在或无权限";
+                else if(code == '422') tip += ": 数据校验失败";
+                else tip += `: ${msg}`;
+                alert(tip); // v4.3 Use Alert for detail
+            }
         },
 
         async pull() {
             const { ghToken: t, ghRepo: r } = STATE.settings;
-            if(!t || !r) return Toast.show("请先填写 Token 和 仓库路径");
+            if(!t || !r) return Toast.show("请先填写配置");
             
-            Portal.confirm("⚠️ 高危操作", "云端数据将覆盖当前所有数据，不可撤销。", "取消", Portal.closeWarn, "确定覆盖", async () => {
+            Portal.confirm("⚠️ 高危操作", "云端数据将覆盖本地，确定？", "取消", Portal.closeWarn, "确定覆盖", async () => {
                 Portal.closeAll(); 
-                this.setStatus('working'); Toast.show("正在拉取数据...");
+                this.setStatus('working'); Toast.show("正在下载...");
                 try {
                     const url = `https://api.github.com/repos/${r}/contents/data.json`, headers = { 'Authorization': `token ${t}` };
                     const res = await fetch(url, { headers });
@@ -204,28 +218,30 @@
                         requestAnimationFrame(() => {
                             setTimeout(() => {
                                 STATE = Migrator.fix(content);
-                                Core.save(); // Save downloaded data
-                                Router.render();
-                                this.setStatus('active');
-                                Toast.show("✅ 恢复成功");
+                                Core.save(); Router.render();
+                                this.setStatus('active'); Toast.show("✅ 恢复成功");
                             }, 50);
                         });
-                    } else if (res.status === 404) {
-                        Toast.show("⚠️ 云端暂无数据");
-                        this.setStatus('error');
-                    } else throw new Error();
-                } catch(e) { this.setStatus('error'); Toast.show("❌ 拉取失败: Token 错误"); }
+                    } else {
+                        const errData = await res.json().catch(()=>({}));
+                        throw new Error(`${res.status}|${errData.message}`);
+                    }
+                } catch(e) { 
+                    this.setStatus('error'); 
+                    alert(`❌ 拉取失败: ${e.message}`);
+                }
             });
         },
 
         async autoCloud() { 
-            const { ghToken: t, ghRepo: r } = STATE.settings; if(!t || !r) return;
+            let { ghToken: t, ghRepo: r } = STATE.settings; if(!t || !r) return;
+            r = r.replace('https://github.com/', '').replace('.git', '');
             try { 
                 const url = `https://api.github.com/repos/${r}/contents/data.json`, headers = { 'Authorization': `token ${t}` };
                 let sha = null;
                 const checkRes = await fetch(url, { headers });
                 if(checkRes.ok) sha = (await checkRes.json()).sha;
-                else if (checkRes.status !== 404) return; // Silent fail on permission error
+                else if(checkRes.status !== 404) return;
 
                 const payload = { message: "Auto Sync", content: btoa(unescape(encodeURIComponent(JSON.stringify(STATE)))) };
                 if(sha) payload.sha = sha;
@@ -233,7 +249,7 @@
                 const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(payload) });
                 if(res.ok) {
                     STATE.settings.lastSyncTime = new Date().toLocaleString();
-                    localStorage.setItem('FIMS_NEXT_DB', JSON.stringify(STATE)); // Silent save
+                    localStorage.setItem('FIMS_NEXT_DB', JSON.stringify(STATE));
                     this.setStatus('active');
                     if(Router.activeTab === 'settings') SettingsUI.render(document.querySelector('.view-settings > div'));
                 }
@@ -327,7 +343,7 @@
         openFinishModal() { Portal.open('finishPortal'); }, doFinish(all) { Core.moveItem(this.activeIdx, this.activeTab, 'finished', all); }, requestDelete() { Portal.confirm("删除", "永久删除此记录？", "取消", Portal.closeWarn, "删除", () => Core.deleteItem(this.activeIdx, this.activeTab)); },
         toEditMode() { Portal.closeAll(); const item = STATE.inventory[this.activeTab][this.activeIdx]; InventoryUI.editMode = true; InventoryUI.editIdx = this.activeIdx; document.getElementById('entryTitle').innerText = '修订资料'; document.getElementById('inBrand').value = item.brand; document.getElementById('inType').value = item.type; document.getElementById('inNotes').value = item.notes || ''; document.getElementById('inColorPicker1').value = item.color; if(item.color2) document.getElementById('inColorPicker2').value = item.color2; document.getElementById('inCount').value = item.count; InventoryUI.switchColorMode(item.colorMode || 'solid'); InventoryUI.renderTagCloud(); setTimeout(() => Portal.open('entryPortal'), 50); }
     };
-    /* v4.2 Fixed Settings UI: No Auto-Sync on Input */
+    /* v4.3 Settings & Console */
     const SettingsUI = {
         holdTimer: null, holdProgress: 0,
         render(app) { 
