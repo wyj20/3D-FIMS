@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D-FIMS Core Next v4.5</title>
+    <title>3D-FIMS Core Next v4.6</title>
     <style>
         :root {
             --main: #00acc1; --bg: #f8f9fa; --nav: #212121; 
@@ -57,7 +57,7 @@
 
         /* 设置面板 UI */
         .settings-block { background: white; border-radius: 18px; padding: 18px; margin-bottom: 12px; border: 1px solid #eee; }
-        .settings-header { font-size: 0.95rem; font-weight: bold; margin-bottom: 12px; border-left: 4px solid var(--main); padding-left: 10px; }
+        .settings-header { font-size: 0.95rem; font-weight: bold; margin-bottom: 12px; border-left: 4px solid var(--main); padding-left: 10px; display: flex; justify-content: space-between; align-items: center; }
         .control-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .grid-btn { padding: 10px 2px; border: 1px solid #f0f0f0; border-radius: 10px; text-align: center; font-size: 0.75rem; background: #fff; cursor: pointer; }
         .grid-btn.active { border-color: var(--main); background: #f0fbfc; color: var(--main); font-weight: bold; }
@@ -69,6 +69,14 @@
         .cloud-btn-up { background: #e3f2fd; color: #1976d2; }
         .cloud-btn-down { background: #e8f5e9; color: #388e3c; }
         .cloud-btn:active { transform: scale(0.98); opacity: 0.8; }
+
+        /* v4.6 Toggle Switch */
+        .toggle-switch { display: inline-flex; align-items: center; cursor: pointer; }
+        .toggle-track { width: 36px; height: 20px; background: #ddd; border-radius: 20px; position: relative; transition: 0.2s; }
+        .toggle-track.checked { background: var(--success); }
+        .toggle-thumb { width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .toggle-track.checked .toggle-thumb { left: 18px; }
+        .toggle-label { font-size: 0.75rem; color: #666; margin-right: 8px; font-weight: normal; }
 
         .btn-hold-reset { position: relative; overflow: hidden; background: white; border: 1.5px solid var(--danger); color: var(--danger); font-weight: bold; padding: 14px; border-radius: 12px; width: 100%; cursor: pointer; display: flex; justify-content: center; align-items: center; box-sizing: border-box; font-size: 0.9rem; }
         .hold-progress { position: absolute; top: 0; left: 0; bottom: 0; width: 0%; background: rgba(255, 82, 82, 0.15); }
@@ -135,29 +143,36 @@
 
 <script>
     const Toast = { show(msg) { const div = document.createElement('div'); div.className = 'fims-toast'; div.innerText = msg; document.body.appendChild(div); requestAnimationFrame(() => div.classList.add('show')); setTimeout(() => { div.classList.remove('show'); setTimeout(() => div.remove(), 300); }, 2000); } };
-    const Migrator = { fix(data) { const def = { inventory: { sealed: [], inuse: [], opened: [], finished: [] }, config: { brands: ['拓竹', '艺澍', 'JAYO', '卓普'], types: ['PLA', 'PETG', 'ABS'] }, settings: { columns: 2, density: 'standard', ghToken: '', ghRepo: '', sortOrder: 'count', lastSyncTime: '从未同步' } }; if(!data.settings) data.settings = def.settings; if(!data.config) data.config = def.config; if(!data.inventory) data.inventory = def.inventory; if(!data.inventory.finished) data.inventory.finished = []; Object.keys(def.settings).forEach(k => { if(data.settings[k] === undefined) data.settings[k] = def.settings[k]; }); return data; } };
+    const Migrator = { fix(data) { const def = { inventory: { sealed: [], inuse: [], opened: [], finished: [] }, config: { brands: ['拓竹', '艺澍', 'JAYO', '卓普'], types: ['PLA', 'PETG', 'ABS'] }, settings: { columns: 2, density: 'standard', ghToken: '', ghRepo: '', sortOrder: 'count', lastSyncTime: '从未同步', autoSync: false } }; if(!data.settings) data.settings = def.settings; if(!data.config) data.config = def.config; if(!data.inventory) data.inventory = def.inventory; if(!data.inventory.finished) data.inventory.finished = []; Object.keys(def.settings).forEach(k => { if(data.settings[k] === undefined) data.settings[k] = def.settings[k]; }); return data; } };
     let RAW_DB = JSON.parse(localStorage.getItem('FIMS_NEXT_DB'));
     let STATE = RAW_DB ? Migrator.fix(RAW_DB) : Migrator.fix({}); 
 
-    /* v4.5 Data Sanitization for Cloud Sync */
+    /* v4.6 Cloud Engine: Auto-Sync Switch & Spam Prevention */
     const SyncCenter = {
         setStatus(status) { const el = document.getElementById('sync-dot'); if(el) el.className = 'sync-status ' + status; },
         export() { const a=document.createElement('a'); a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(STATE)); a.download=`FIMS_${Date.now()}.json`; a.click(); },
         triggerImport() { document.getElementById('importInput').click(); },
         importFile(input) { const file = input.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if(data.inventory && data.settings) { Portal.closeAll(); document.body.removeAttribute('style'); requestAnimationFrame(() => { setTimeout(() => { STATE = Migrator.fix(data); Core.save(); Router.render(); Toast.show("导入成功"); }, 50); }); } else throw new Error(); } catch(err) { Toast.show("文件无效"); } }; reader.readAsText(file); input.value = ''; },
         
-        // Helper: Create safe copy without Token
         getSanitizedState() {
-            const safeState = JSON.parse(JSON.stringify(STATE)); // Deep clone
-            if(safeState.settings) delete safeState.settings.ghToken; // Remove Secret
+            const safeState = JSON.parse(JSON.stringify(STATE));
+            if(safeState.settings) delete safeState.settings.ghToken;
             return safeState;
+        },
+
+        toggleAutoSync() {
+            STATE.settings.autoSync = !STATE.settings.autoSync;
+            Core.save();
+            SettingsUI.render(document.querySelector('.view-settings > div'));
+            Toast.show(STATE.settings.autoSync ? "自动同步已开启" : "自动同步已关闭");
         },
 
         async push() {
             let { ghToken: t, ghRepo: r } = STATE.settings;
             t = t ? t.trim() : ''; r = r ? r.trim().replace('https://github.com/', '').replace('.git', '') : '';
-            
             if(!t || !r) return Toast.show("请先填写配置");
+            
+            // v4.4 & 4.5 fixes included
             if(t !== STATE.settings.ghToken || r !== STATE.settings.ghRepo) { STATE.settings.ghToken = t; STATE.settings.ghRepo = r; Core.save(); if(Router.activeTab === 'settings') SettingsUI.render(document.querySelector('.view-settings > div')); }
 
             this.setStatus('working'); Toast.show("☁️ 正在连接云端...");
@@ -171,7 +186,6 @@
                 if(checkRes.ok) sha = (await checkRes.json()).sha;
                 else if(checkRes.status !== 404) { const e = await checkRes.json().catch(()=>({})); throw new Error(`${checkRes.status}|${e.message||checkRes.statusText}`); }
 
-                // v4.5 Fix: Upload SANITIZED state (no token)
                 const payload = { 
                     message: "Manual Push via FIMS", 
                     content: btoa(unescape(encodeURIComponent(JSON.stringify(this.getSanitizedState())))) 
@@ -192,7 +206,7 @@
                 let tip = `❌ 错误 ${code}`;
                 if(code == '401') tip += "\nToken 无效 (检查权限)";
                 else if(code == '404') tip += "\n仓库未找到 (检查路径)";
-                else if(code == '409') tip += "\n触发安全拦截\n(检测到 Token 泄漏, 已自动修复, 请重试)"; // v4.5 Special Hint
+                else if(code == '409') tip += "\n触发安全拦截\n(检测到 Token 泄漏, 已自动修复, 请重试)";
                 else tip += `\n${msg}`;
                 alert(tip);
             }
@@ -214,7 +228,6 @@
                         const json = await res.json();
                         const content = JSON.parse(decodeURIComponent(escape(window.atob(json.content))));
                         
-                        // v4.5 Fix: Restore local token if cloud data is sanitized
                         if(!content.settings.ghToken && t) content.settings.ghToken = t;
                         if(content.settings.ghRepo !== r) content.settings.ghRepo = r;
 
@@ -231,6 +244,9 @@
         },
 
         async autoCloud() { 
+            // v4.6 Fix: Check global switch before running
+            if (!STATE.settings.autoSync) return;
+
             let { ghToken: t, ghRepo: r } = STATE.settings; if(!t || !r) return;
             t = t.trim(); r = r.trim();
             try { 
@@ -240,7 +256,6 @@
                 const checkRes = await fetch(url, { headers });
                 if(checkRes.ok) sha = (await checkRes.json()).sha; else if(checkRes.status !== 404) return;
 
-                // v4.5 Fix: Sanitize Auto-Sync too
                 const payload = { 
                     message: "Auto Sync", 
                     content: btoa(unescape(encodeURIComponent(JSON.stringify(this.getSanitizedState())))) 
@@ -347,12 +362,19 @@
     const SettingsUI = {
         holdTimer: null, holdProgress: 0,
         render(app) { 
+            const autoSyncState = STATE.settings.autoSync ? 'checked' : '';
             app.innerHTML = `
                 <div class="settings-block"><div class="settings-header">界面列数</div><div class="control-grid">${[1,2,3,4,5,6].map(n=>`<div class="grid-btn ${STATE.settings.columns==n?'active':''}" onclick="SettingsUI.updateCols(${n})">${n}列</div>`).join('')}</div></div>
                 <div class="settings-block"><div class="settings-header">视觉密度</div><div class="control-grid">${['standard','compact','tiles'].map(d=>`<div class="grid-btn ${STATE.settings.density==d?'active':''}" onclick="SettingsUI.updateDensity('${d}')">${d==='tiles'?'色块':d==='compact'?'紧凑':'标准'}</div>`).join('')}</div></div>
                 
                 <div class="settings-block">
-                    <div class="settings-header">云端同步 (GitHub)</div>
+                    <div class="settings-header">
+                        云端同步 (GitHub)
+                        <div class="toggle-switch" onclick="SyncCenter.toggleAutoSync()">
+                            <span class="toggle-label">自动</span>
+                            <div class="toggle-track ${autoSyncState}"><div class="toggle-thumb"></div></div>
+                        </div>
+                    </div>
                     <input type="password" id="ghToken" class="form-input" value="${STATE.settings.ghToken}" placeholder="GitHub Token" onchange="STATE.settings.ghToken=this.value">
                     <input type="text" id="ghRepo" class="form-input" value="${STATE.settings.ghRepo}" placeholder="仓库路径 (user/repo)" onchange="STATE.settings.ghRepo=this.value">
                     
