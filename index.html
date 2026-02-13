@@ -110,16 +110,16 @@
 <body>
 
     <nav class="fims-nav">
-        <button class="nav-item active" id="nav-sealed" onclick="Router.go('sealed')">总库<span id="cnt-sealed" class="nav-badge">0</span><div id="sync-dot" class="sync-status"></div></button>
-        <button class="nav-item" id="nav-inuse" onclick="Router.go('inuse')">使用<span id="cnt-inuse" class="nav-badge">0</span></button>
-        <button class="nav-item" id="nav-opened" onclick="Router.go('opened')">备用<span id="cnt-opened" class="nav-badge">0</span></button>
-        <button class="nav-item" id="nav-finished" onclick="Router.go('finished')">记录<span id="cnt-finished" class="nav-badge">0</span></button>
+        <button class="nav-item active" id="nav-sealed" onclick="Router.go('sealed')">总耗材库<span id="cnt-sealed" class="nav-badge">0</span></button>
+        <button class="nav-item" id="nav-inuse" onclick="Router.go('inuse')">使用中<span id="cnt-inuse" class="nav-badge">0</span></button>
+        <button class="nav-item" id="nav-opened" onclick="Router.go('opened')">备用库<span id="cnt-opened" class="nav-badge">0</span></button>
+        <button class="nav-item" id="nav-finished" onclick="Router.go('finished')">消耗记录<span id="cnt-finished" class="nav-badge">0</span></button>
         <button class="nav-item" id="nav-settings" onclick="Router.go('settings')">设置</button>
     </nav>
 
     <div id="matrixPanel" class="search-matrix-panel">
         <div class="matrix-header">
-            <div class="matrix-search-box"><span style="font-size:1rem; opacity:0.4">🔍</span><input type="text" id="matrixInput" class="matrix-input placeholder="输入关键字..." oninput="SearchEngine.onInput()"></div>
+            <div class="matrix-search-box"><span style="font-size:1rem; opacity:0.4">🔍</span><input type="text" id="matrixInput" class="matrix-input" placeholder="输入关键字..." oninput="SearchEngine.onInput()"></div>
             <div class="matrix-clear-btn" onclick="SearchEngine.clear()">重置</div>
         </div>
         <div class="matrix-section"><div class="matrix-label">厂家</div><div id="trackBrand" class="matrix-track"></div></div>
@@ -137,7 +137,11 @@
     <div id="entryPortal" class="fims-portal"><div class="portal-content"><div class="p-header"><div id="entryTitle" style="font-weight:bold; text-align:center;">登记</div></div><div class="p-body"><label style="font-size:0.65rem; color:#999;">品牌</label><input type="text" id="inBrand" class="form-input"><div id="brandTags" class="tag-row"></div><label style="font-size:0.65rem; color:#999;">材质</label><input type="text" id="inType" class="form-input"><div id="typeTags" class="tag-row"></div><div style="display:flex; gap:5px; margin-bottom:10px;"><div class="grid-btn active" id="mode-solid" onclick="InventoryUI.switchColorMode('solid')" style="flex:1">单色</div><div class="grid-btn" id="mode-gradient" onclick="InventoryUI.switchColorMode('gradient')" style="flex:1">渐变</div><div class="grid-btn" id="mode-dual" onclick="InventoryUI.switchColorMode('dual')" style="flex:1">双色</div></div><div style="display:flex; gap:10px; margin-bottom:10px; align-items:center;"><input type="color" id="inColorPicker1" style="width:45px; height:40px; border:none; background:none;" value="#00acc1"><span id="colorJoin" style="display:none;">+</span><input type="color" id="inColorPicker2" style="width:45px; height:40px; border:none; background:none; display:none;" value="#ff4081"><div style="flex:1; font-size:0.75rem; color:#999; text-align:right;">点击选择</div></div><label style="font-size:0.65rem; color:#999;">备注</label><input type="text" id="inNotes" class="form-input"><label style="font-size:0.65rem; color:#999;">数量</label><input type="number" id="inCount" value="1" class="form-input"></div><div class="p-footer"><div style="display:flex; gap:10px;"><button class="fims-btn btn-ghost" onclick="Portal.closeAll()">放弃</button><button class="fims-btn btn-main" onclick="InventoryUI.saveSubmit()">保存</button></div></div></div></div>
     <div id="warnPortal" class="fims-portal"><div class="portal-content" style="text-align:center;"><div class="p-header"><div id="warnIcon" style="font-size:40px">⚠️</div><div id="warnTitle" style="font-weight:bold; margin:5px 0;"></div></div><div class="p-body"><p id="warnMsg" style="color:#666; font-size:0.85rem; line-height:1.5;"></p></div><div class="p-footer"><div style="display:flex; gap:10px;"><button class="fims-btn btn-ghost" id="warnLBtn"></button><button class="fims-btn" id="warnRBtn"></button></div></div></div></div>
     <div id="finishPortal" class="fims-portal"><div class="portal-content" style="text-align:center;"><div class="p-header"><div style="font-size:40px">📉</div><div style="font-weight:bold; margin:5px 0;">核销</div></div><div class="p-footer"><div style="display:flex; gap:10px; margin-bottom:10px;"><button class="fims-btn btn-danger" onclick="HubUI.doFinish(true)">全额核销</button><button class="fims-btn btn-main" onclick="HubUI.doFinish(false)">核销 1 卷</button></div><button class="fims-btn btn-ghost" onclick="Portal.closeAll()">取消</button></div></div></div>
-    <div id="hubPortal" class="fims-portal"><div class="portal-content"><div class="p-body" style="padding-top:15px;"><div id="hubCardArea"></div><div id="hubActionArea" style="display:flex; flex-direction:column; gap:8px; margin-top:15px;"></div><div class="control-grid" style="margin-top:15px; padding-top:12px; border-top:1px dashed #eee"><button class="grid-btn" onclick="HubUI.toEditMode()">✎ 修订</button><button class="grid-btn" style="color:var(--danger)" onclick="HubUI.requestDelete()">🗑️ 删除</button></div></div><div class="p-footer"><button class="grid-btn" style="width:100%; padding:12px;" onclick="Portal.closeAll()">✖️ 关闭</button></div></div></div>
+    <div id="hubPortal" class="fims-portal"><div class="portal-content"><div class="p-body" style="padding-top:15px;"><div id="hubCardArea"></div><div id="hubActionArea" style="display:flex; flex-direction:column; gap:8px; margin-top:15px;"></div><div class="control-grid" style="margin-top:15px; padding-top:12px; border-top:1px dashed #eee; grid-template-columns: 1fr 1fr; gap: 15px;">
+    <button class="grid-btn" style="padding:12px 0; font-size:0.85rem;" onclick="HubUI.toEditMode()">✎ 修订</button>
+    <button class="grid-btn" style="color:var(--danger); padding:12px 0; font-size:0.85rem;" onclick="HubUI.requestDelete()">🗑️ 删除</button>
+</div>
+</div><div class="p-footer"><button class="grid-btn" style="width:100%; padding:12px;" onclick="Portal.closeAll()">✖️ 关闭</button></div></div></div>
 
     <input type="file" id="importInput" style="display:none" onchange="SyncCenter.importFile(this)">
 
@@ -373,12 +377,11 @@
             document.getElementById('hubCardArea').innerHTML = `<div class="fims-card density-standard" style="background:${bg}; cursor:default;">${badge}<div class="card-content-layer"><div class="card-brand">${item.brand}</div><div class="card-type">${item.type}</div>${item.notes?`<div class="card-notes"># ${item.notes}</div>`:''}<div class="card-count">${item.count}</div></div></div>`;
             let btns = '';
             if(tab === 'sealed') btns = `<button class="fims-btn btn-main" onclick="HubUI.checkUnseal(${idx})">出库开启</button>`;
-            else if(tab === 'inuse') btns = `<button class="fims-btn btn-main" onclick="Core.moveItem(${idx},'inuse','opened')">取下备用</button><button class="fims-btn btn-danger" onclick="HubUI.openFinishModal()">耗尽核销</button>`;
+            else if(tab === 'inuse') btns = `<button class="fims-btn btn-main" onclick="Core.moveItem(${idx},'inuse','opened')">取下备用库</button><button class="fims-btn btn-danger" onclick="HubUI.openFinishModal()">耗尽核销</button>`;
             else if(tab === 'opened') btns = `<button class="fims-btn btn-main" onclick="Core.moveItem(${idx},'opened','inuse')">上机加载</button><button class="fims-btn btn-danger" onclick="HubUI.openFinishModal()">耗尽核销</button>`;
-            else if(tab === 'finished') btns = `<button class="fims-btn btn-main" onclick="Core.moveItem(${idx},'finished','sealed')">恢复库存</button>`;
+            else if(tab === 'finished') btns = `<button class="fims-btn btn-main" onclick="Core.moveItem(${idx},'finished','sealed')">撤回</button>`;
             document.getElementById('hubActionArea').innerHTML = btns;
             
-            Portal.closeAll();
             Portal.open('hubPortal');
         },
         checkUnseal(idx) {
@@ -389,7 +392,7 @@
             const inUseCount = STATE.inventory.inuse.filter(i => i.brand === item.brand && i.type === item.type && i.color === item.color).reduce((s,i)=>s+i.count,0);
             const openedCount = STATE.inventory.opened.filter(i => i.brand === item.brand && i.type === item.type && i.color === item.color).reduce((s,i)=>s+i.count,0);
             if (inUseCount > 0 || openedCount > 0) {
-                Portal.confirm("重复提醒", `同规格已在库：使用中 ${inUseCount} | 备用 ${openedCount}\n确定开启新卷？`, "取消", Portal.closeWarn, "确定开启", () => Core.moveItem(idx, 'sealed', 'inuse'));
+                Portal.confirm("重复提醒", `同规格已在库：使用中 ${inUseCount} | 备用库 ${openedCount}\n确定开启新卷？`, "取消", Portal.closeAll, "确定开启", () => Core.moveItem(idx, 'sealed', 'inuse'));
             } else {
                 Core.moveItem(idx, 'sealed', 'inuse');
             }
