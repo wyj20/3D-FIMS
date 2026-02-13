@@ -139,7 +139,7 @@
     let RAW_DB = JSON.parse(localStorage.getItem('FIMS_NEXT_DB'));
     let STATE = RAW_DB ? Migrator.fix(RAW_DB) : Migrator.fix({}); 
 
-    /* v4.2 Cloud Engine: Smart Creation & Strict Timestamp */
+    /* v4.2 Cloud Engine: Fixed First-Run & Strict Timing */
     const SyncCenter = {
         setStatus(status) { const el = document.getElementById('sync-dot'); if(el) el.className = 'sync-status ' + status; },
         export() { const a=document.createElement('a'); a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(STATE)); a.download=`FIMS_${Date.now()}.json`; a.click(); },
@@ -154,34 +154,36 @@
             try {
                 const url = `https://api.github.com/repos/${r}/contents/data.json`, headers = { 'Authorization': `token ${t}` };
                 
-                // 1. Check if file exists to get SHA
+                // 1. Check if file exists (Smart Create Logic)
                 let sha = null;
                 const checkRes = await fetch(url, { headers });
                 if(checkRes.ok) {
                     const data = await checkRes.json();
                     sha = data.sha;
+                } else if (checkRes.status !== 404) {
+                    // If error is NOT 404, it's a permission error
+                    throw new Error("Permission Denied");
                 }
 
-                // 2. Construct Payload (Do NOT send SHA if new file)
+                // 2. Construct Payload
                 const payload = {
                     message: "Manual Push via FIMS",
                     content: btoa(unescape(encodeURIComponent(JSON.stringify(STATE))))
                 };
-                if(sha) payload.sha = sha;
+                if(sha) payload.sha = sha; // Only add SHA if updating, omit for creating
 
                 // 3. Perform PUT
                 const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(payload) });
                 
                 if(res.ok) { 
-                    STATE.settings.lastSyncTime = new Date().toLocaleString(); // Only update on 200 OK
-                    Core.save(); 
+                    STATE.settings.lastSyncTime = new Date().toLocaleString(); // Only update local time on 200/201
+                    // Don't call Core.save() here to avoid recursive autoCloud loop, just save to LS
+                    localStorage.setItem('FIMS_NEXT_DB', JSON.stringify(STATE));
                     this.setStatus('active'); 
                     if(Router.activeTab === 'settings') SettingsUI.render(document.querySelector('.view-settings > div'));
                     Toast.show("✅ 上传成功"); 
                 } else {
-                    const err = await res.json();
-                    console.error(err);
-                    throw new Error();
+                    throw new Error("Upload Failed");
                 }
             } catch(e) { this.setStatus('error'); Toast.show("❌ 上传失败: 请检查 Token 权限"); }
         },
@@ -202,7 +204,7 @@
                         requestAnimationFrame(() => {
                             setTimeout(() => {
                                 STATE = Migrator.fix(content);
-                                Core.save();
+                                Core.save(); // Save downloaded data
                                 Router.render();
                                 this.setStatus('active');
                                 Toast.show("✅ 恢复成功");
@@ -223,13 +225,15 @@
                 let sha = null;
                 const checkRes = await fetch(url, { headers });
                 if(checkRes.ok) sha = (await checkRes.json()).sha;
+                else if (checkRes.status !== 404) return; // Silent fail on permission error
 
                 const payload = { message: "Auto Sync", content: btoa(unescape(encodeURIComponent(JSON.stringify(STATE)))) };
                 if(sha) payload.sha = sha;
 
                 const res = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(payload) });
                 if(res.ok) {
-                    STATE.settings.lastSyncTime = new Date().toLocaleString(); // Only update on success
+                    STATE.settings.lastSyncTime = new Date().toLocaleString();
+                    localStorage.setItem('FIMS_NEXT_DB', JSON.stringify(STATE)); // Silent save
                     this.setStatus('active');
                     if(Router.activeTab === 'settings') SettingsUI.render(document.querySelector('.view-settings > div'));
                 }
@@ -323,6 +327,7 @@
         openFinishModal() { Portal.open('finishPortal'); }, doFinish(all) { Core.moveItem(this.activeIdx, this.activeTab, 'finished', all); }, requestDelete() { Portal.confirm("删除", "永久删除此记录？", "取消", Portal.closeWarn, "删除", () => Core.deleteItem(this.activeIdx, this.activeTab)); },
         toEditMode() { Portal.closeAll(); const item = STATE.inventory[this.activeTab][this.activeIdx]; InventoryUI.editMode = true; InventoryUI.editIdx = this.activeIdx; document.getElementById('entryTitle').innerText = '修订资料'; document.getElementById('inBrand').value = item.brand; document.getElementById('inType').value = item.type; document.getElementById('inNotes').value = item.notes || ''; document.getElementById('inColorPicker1').value = item.color; if(item.color2) document.getElementById('inColorPicker2').value = item.color2; document.getElementById('inCount').value = item.count; InventoryUI.switchColorMode(item.colorMode || 'solid'); InventoryUI.renderTagCloud(); setTimeout(() => Portal.open('entryPortal'), 50); }
     };
+    /* v4.2 Fixed Settings UI: No Auto-Sync on Input */
     const SettingsUI = {
         holdTimer: null, holdProgress: 0,
         render(app) { 
@@ -332,8 +337,8 @@
                 
                 <div class="settings-block">
                     <div class="settings-header">云端同步 (GitHub)</div>
-                    <input type="password" id="ghToken" class="form-input" value="${STATE.settings.ghToken}" placeholder="GitHub Token" onchange="STATE.settings.ghToken=this.value;Core.save()">
-                    <input type="text" id="ghRepo" class="form-input" value="${STATE.settings.ghRepo}" placeholder="仓库路径 (user/repo)" onchange="STATE.settings.ghRepo=this.value;Core.save()">
+                    <input type="password" id="ghToken" class="form-input" value="${STATE.settings.ghToken}" placeholder="GitHub Token" onchange="STATE.settings.ghToken=this.value">
+                    <input type="text" id="ghRepo" class="form-input" value="${STATE.settings.ghRepo}" placeholder="仓库路径 (user/repo)" onchange="STATE.settings.ghRepo=this.value">
                     
                     <div class="cloud-console">
                         <div class="cloud-time">🕒 最近同步: ${STATE.settings.lastSyncTime || '未同步'}</div>
